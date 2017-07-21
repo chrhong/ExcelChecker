@@ -1,4 +1,5 @@
 #coding:utf-8
+#this is based on Python2.7
 
 from win32com.client import Dispatch
 import win32com.client as win32
@@ -149,7 +150,7 @@ def tool_env_check():
     elif __file__:
         root_path = os.path.dirname(__file__)
 
-    config_path = root_path + "/" + "enabled"
+    config_path = root_path + "/" + "installed"
 
     try:
         with open(config_path, 'r') as f:
