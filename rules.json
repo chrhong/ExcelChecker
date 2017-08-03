@@ -1,0 +1,31 @@
+{
+    "file1":
+    {
+        "file_key": "索引",
+        "title_key": "1:开票索引",
+        "duplicate": "yes",
+        "none": "mark",
+        "combine": "",
+        "validation": "报关单价:报关数量"
+    },
+
+    "file2":
+    {
+        "file_key": "进项",
+        "title_key": "1:零件号码",
+        "duplicate": "yes",
+        "none": "mark",
+        "combine": "",
+        "validation": "不含税单价:数量"
+    },
+
+    "file3":
+    {
+        "file_key": "库存",
+        "title_key": "5:关键字",
+        "duplicate": "yes",
+        "none": "mark",
+        "combine": "",
+        "validation": ""
+    }
+}

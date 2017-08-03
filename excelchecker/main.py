@@ -1,5 +1,5 @@
 from __init__ import *
-
+from easyexcel import eprint
 import gui
 
 def main():

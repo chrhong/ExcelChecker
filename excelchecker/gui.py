@@ -1,12 +1,13 @@
 #! -*- coding: utf-8 -*-
 from __init__ import *
-from checker import Checker
+from user import Checker
 from icon import img
+from easyexcel import *
 
 CHECK_TYPE = 0
 LOG_FLUSH_COUNT = 0
 
-def log_print(log_str):
+def printTBox(log_str):
     global LOG_FLUSH_COUNT
     LOG_FLUSH_COUNT = LOG_FLUSH_COUNT + 1
 
@@ -16,28 +17,28 @@ def log_print(log_str):
     if LOG_FLUSH_COUNT >= 10:
         LOG_FLUSH_COUNT = 0
         LOG_BOX.update()
-    print(log_str.decode('utf-8'))
+    # print(log_str)#python 2.x .decode('utf-8')
 
 def type_select(type_var):
     global CHECK_TYPE
     CHECK_TYPE = type_var.get()
     type_list = ["","进项表","索引表","库存表"]
     selection = "你选择了" + type_list[CHECK_TYPE]
-    log_print(selection)
+    eprint(selection)
 
 def browse(source_file):
     file_path = askopenfilename()
     if not file_path is None:
         source_file.delete(0,END)
     source_file.insert(index=0, string=file_path)
-    log_print("打开文件:\n"+file_path)
+    eprint("打开文件:\n"+file_path)
 
 def back_job(file_name):
-    th=threading.Thread(target=Checker,args=(file_name,CHECK_TYPE,log_print))
+    th=threading.Thread(target=Checker,args=(file_name,CHECK_TYPE))
     th.setDaemon(True)
     th.start()
     # th.join()
-    # log_print("back thread stopped!")
+    # eprint("back thread stopped!")
 
 def run():
     root = Tk()
@@ -65,6 +66,8 @@ def run():
     LOG_BOX = Text(root, fg="white", bg="black", font=log_box_font, relief=SUNKEN, width=48, height=5)
     LOG_BOX.place(x=10, y=100, anchor=NW)
     LOG_BOX.bind("<KeyPress>", lambda e:"break")
+
+    easyLog.registerPrintCb(printTBox)
 
     radio_font = ("微软雅黑", 12, "normal")
     R1 = Radiobutton(root, text="进项表", font=radio_font, variable=type_var, value=1, command=lambda: type_select(type_var))

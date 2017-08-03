@@ -13,7 +13,7 @@ from tkinter.filedialog import askdirectory
 from tkinter.filedialog import askopenfilename
 import pythoncom
 import win32com.client as win32
-import _winreg as winreg
+import winreg as winreg #python 2.x _winreg
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+# reload(sys)
+# sys.setdefaultencoding('utf-8')

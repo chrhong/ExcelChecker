@@ -2,16 +2,8 @@
 from __init__ import *
 from easyexcel import *
 
-LOG_FUNC_CHOOSE = 'user'#'default'
 DBDB = []
 DBKEY = []
-
-def lprint(log_str):
-    if LOG_FUNC_CHOOSE == 'default':
-        print(log_str)
-    else:
-        LOG_BOX_PRINT(log_str)
-    return
 
 cn_pattern = re.compile(u'[\u4e00-\u9fa5]+')
 def contain_cn(word):
@@ -21,17 +13,17 @@ def contain_cn(word):
     return match
 
 def hang_up_to_watch_errors():
-    lprint(traceback.format_exc())
-    lprint("Stop to see what error occurs!!!")
-    # lprint("You can Exit with 'Ctrl + C'...")
+    eprint(traceback.format_exc())
+    eprint("Stop to see what error occurs!!!")
+    # eprint("You can Exit with 'Ctrl + C'...")
     # while(1):
     #     pass
     sys.exit()
 
 def regist_contextmenu(workpath, keyword):
     workpath = workpath.replace('/', '\\')
-    lprint('---')
-    lprint(workpath)
+    eprint('---')
+    eprint(workpath)
 
     target_icon = workpath + "\\" + keyword
     target_cmd = workpath + "\\" + keyword + " \"%1\""
@@ -44,7 +36,7 @@ def regist_contextmenu(workpath, keyword):
         winreg.SetValue(targetkey, "command",  winreg.REG_SZ, target_cmd)
         winreg.CloseKey(subkey)
     except OSError:
-        lprint("[Error] Contextmenu register failed!")
+        eprint("[Error] Contextmenu register failed!")
         hang_up_to_watch_errors()
         return False
     else:
@@ -60,11 +52,11 @@ def tool_env_check():
 
     try:
         with open(config_path, 'r') as f:
-            lprint("[INFO] tool is already registered to contextmemu")
+            eprint("[INFO] tool is already registered to contextmemu")
     except:
         regist_contextmenu(root_path, 'ExcelChecker.exe')
         with open(config_path, 'a') as f:
-            lprint("[INFO] register tool to contextmemu")
+            eprint("[INFO] register tool to contextmemu")
         sys.exit(0)
 
 def get_cost_database(database_file):
@@ -77,10 +69,10 @@ def get_cost_database(database_file):
                 line = ''.join(line.strip().split(' '))
                 line_list = line.split(';')
                 db.append(line_list)
-        # lprint(db[0][1].strip('[]').split(',')[0])
+        # eprint(db[0][1].strip('[]').split(',')[0])
         return db
     except:
-        lprint("[ERROR] %s not exist" % database_file)
+        eprint("[ERROR] %s not exist" % database_file)
         hang_up_to_watch_errors()
 
 
@@ -103,9 +95,9 @@ def note_cell_init(xls, sheet):
     sht = xls.Sheet(xls, sheet)
     value1 = sht.getCell(1, 'A')
     if "NOTE:" == value1:
-        lprint("NOTE Cell is already exist!")
+        eprint("NOTE Cell is already exist!")
     else:
-        lprint("Create NOTE Cell")
+        eprint("Create NOTE Cell")
         sht.inserRow(1)
         sht.inserRow(2)
         sht.setCell(1,'A',"NOTE:")
@@ -122,9 +114,9 @@ def index_table_check(xls,db,key):
     sht = xls.Sheet(xls,'Sheet1')
     index_tuple = sht.getColumn('E')
     index_list = str(index_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
-    # lprint index_list
+    # eprint index_list
     # for i in index_list:
-    #     lprint i.decode('unicode-escape') #中文打印
+    #     eprint i.decode('unicode-escape') #中文打印
 
     valid_list = []
     i = len(index_list)
@@ -133,7 +125,7 @@ def index_table_check(xls,db,key):
         #Excel index range, [1,len()]
         i = i - 1
         if u'开票索引' == index_list[i].decode('unicode-escape'):
-            lprint("Meet title line to exit")
+            eprint("Meet title line to exit")
             break
 
         if 'None' == index_list[i]:
@@ -141,7 +133,7 @@ def index_table_check(xls,db,key):
         else:
             sht.markCell(i+1, 'E', NORMAL)
             if index_list[i] in valid_list:
-                lprint(sht.getCell(i+1, 'E'))
+                eprint(sht.getCell(i+1, 'E'))
                 sht.deleteRow(i+1)
             else:
                 valid_list.append(index_list[i])
@@ -165,7 +157,7 @@ def index_table_check(xls,db,key):
                         sht.markCell(i+1, 'B', NORMAL)
                 except:
                     sht.markCell(i+1, 'E', UNKNOW)
-                    lprint("%s is not in the datebase" % index_list[i].decode('unicode-escape'))
+                    eprint("%s is not in the datebase" % index_list[i].decode('unicode-escape'))
 
     return
 
@@ -196,7 +188,8 @@ def index_sell_price_check(sht, row, dbi, params_list):
 
 def index_check_new(xls,db,key):
     sht = xls.Sheet(xls, 'Sheet1')
-    global DBDB
+    db_key = key
+
     index_rule = {
         "KeyColumn" : 'E',
         "TitleLine" : "开票索引",
@@ -205,11 +198,9 @@ def index_check_new(xls,db,key):
         "Keep" : [],
         "CheckItem" : ['C','B:C'],
         "CheckMethod" : [index_sell_price_check, index_sell_count_check],
-        "Database" : DBDB,
-        "DbKey" : DBKEY
     }
 
-    sht.dupCombColumn('E', index_rule)
+    sht.dupCombColumn('E', index_rule, db_key)
 
 
 def buy_table_check(xls,db,key):
@@ -218,7 +209,7 @@ def buy_table_check(xls,db,key):
     sht = xls.Sheet(xls, 'Sheet1')
     num_tuple = sht.getColumn('F')
     num_list = str(num_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
-    #lprint num_list
+    #eprint num_list
 
     valid_list = []
     i = len(num_list)
@@ -227,7 +218,7 @@ def buy_table_check(xls,db,key):
         #Excel index range, [1,len()]
         i = i - 1
         if u'零件号码' == num_list[i].decode('unicode-escape'):
-            lprint("Meet title line to exit")
+            eprint("Meet title line to exit")
             break
 
         if 'None' == num_list[i]:
@@ -235,7 +226,7 @@ def buy_table_check(xls,db,key):
         else:
             sht.markCell(i+1, 'F', NORMAL)
             if num_list[i] in valid_list:
-                lprint(sht.getCell(i+1, 'F'))
+                eprint(sht.getCell(i+1, 'F'))
                 sht.deleteRow(i+1)
             else:
                 valid_list.append(num_list[i])
@@ -259,7 +250,7 @@ def buy_table_check(xls,db,key):
                         sht.markCell(i+1, 'I', NORMAL)
                 except:
                     sht.markCell(i+1, 'F', UNKNOW)
-                    lprint("%s is not in the datebase" % num_list[i].decode('unicode-escape'))
+                    eprint("%s is not in the datebase" % num_list[i].decode('unicode-escape'))
 
     return
 
@@ -279,7 +270,7 @@ def stock_table_check(xls,db,key):
         key_str = key_list[i]
 
         if u'关键字' == key_str.decode('unicode-escape'):
-            lprint("Meet title line to exit")
+            eprint("Meet title line to exit")
             break
 
         if 'None' == key_str:
@@ -298,7 +289,7 @@ def stock_table_check(xls,db,key):
             if  'None' == sht.getCell(first_index+1, 'C'):
                 sht.setCell(first_index+1, 'C', sht.getCell(i+1, 'C'))
 
-            lprint(sht.getCell(i+1, 'A'))
+            eprint(sht.getCell(i+1, 'A'))
             sht.deleteRow(i+1)
             key_list.pop(i) #update list
         else:
@@ -312,20 +303,18 @@ excel_handler = {
     '进项表' : buy_table_check
 }
 
-def Checker(source_file, check_type, log_print_func):
-    global LOG_BOX_PRINT
-    LOG_BOX_PRINT = log_print_func
+def Checker(source_file, check_type):
     type_list = ["","进项表","索引表","库存表"]
     try:
         #should be called in each thread, otherwise, execl open failed.
         pythoncom.CoInitialize()
 
         if source_file == "" or check_type == 0:
-            lprint("[ERROR]未选择文件 或者 未选择表格类型")
+            eprint("[ERROR]未选择文件 或者 未选择表格类型")
             return
 
         source_file = source_file.replace('\\', '/').replace('\"', '')
-        lprint(source_file)
+        eprint(source_file)
 
         cost_db = []
         cost_key = []
@@ -338,14 +327,14 @@ def Checker(source_file, check_type, log_print_func):
             DBDB = cost_db
             DBKEY = cost_key
 
-        lprint('[INFO] 开始 %s 检查...' % type_list[check_type])
+        eprint('[INFO] 开始 %s 检查...' % type_list[check_type])
         start = time.clock()
         xls = EasyExcel(source_file)
         excel_handler[type_list[check_type]](xls,cost_db,cost_key)
         xls.save()
         end = time.clock()
-        lprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
-        # lprint("[INFO] 错误: %d 个, 无法匹配: %d 个" % (xls.ERROR_COUNT, xls.NONE_COUNT))
+        eprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
+        # eprint("[INFO] 错误: %d 个, 无法匹配: %d 个" % (xls.ERROR_COUNT, xls.NONE_COUNT))
         xls.close()
     except:
         hang_up_to_watch_errors()

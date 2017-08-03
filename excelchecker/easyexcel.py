@@ -16,6 +16,26 @@ UNKNOW = GREY = 15
 #     "CheckMethod" : [func1, func2]
 # }
 
+class EasyLog:
+    """
+    To manage print functions
+    """
+    def __init__(self):
+        self.print_list = [print,]
+    def registerPrintCb(self, print_func):
+        if print_func not in self.print_list:
+            self.print_list.append(print_func)
+    def removePrintCb(self, print_func):
+        if print_func not in self.print_list:
+            self.print_list.pop(print_func)
+    def lprint(self, log_str):
+        for print_func in self.print_list:
+            print_func(log_str)
+
+#constants
+easyLog = EasyLog()
+eprint = easyLog.lprint
+
 class EasyExcel:
     """
     To handle Excel easier.
@@ -59,6 +79,7 @@ class EasyExcel:
             self.taglist = [NORMAL,GOOD,ERROR,UNKNOW]
             self.statistic = [0,0,0,0]
             self.xlSheet = xls.xlBook.Worksheets(sheet)
+            self.xls = xls
             if self.xlSheet == None:
                 self.xlSheet = xls.xlBook.Worksheets.Add()
                 self.xlSheet.Name = sheet
@@ -82,8 +103,8 @@ class EasyExcel:
             # sht.Range("A1").Borders.LineStyle = xlDouble
             sht.Cells(row, col).BorderAround(1,4)         #表格边框
             sht.Rows(row).RowHeight = 30                    #行高
-            sht.Cells(row, col).HorizontalAlignment = -4131 #水平居中xlCenter
-            sht.Cells(row, col).VerticalAlignment = -4160
+            # sht.Cells(row, col).HorizontalAlignment = self.xls.xlRight
+            sht.Cells(row, col).VerticalAlignment = -4135
 
         def markCell(self, row, col, tag):
             """mark a cell with color/tag, and collect statistics"""
@@ -176,13 +197,12 @@ class EasyExcel:
             sht.deleteRow(dupRow)
             return True
 
-        def dupCombColumn(self, col, combRule):
+        def dupCombColumn(self, col, combRule, db_key):
             sht = self
             data_tuple = sht.getColumn(col)
             data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
 
             title_line = combRule["TitleLine"]
-            db_key = combRule["DbKey"]
 
             valid_list = []
             i = len(data_list)
@@ -190,13 +210,13 @@ class EasyExcel:
                 #List  index range, [0,len()-1]
                 #Excel index range, [1,len()]
                 i = i - 1
-                if title_line == data_list[i].decode('unicode-escape'):
-                    print("Meet title line to end check")
+                if title_line == data_list[i]:#python 2.x .decode('unicode-escape')
+                    eprint("Meet title line to end check")
                     break
 
                 if self.__isNotEmpty(i+1, col, data_list[i]):
                     if data_list[i] in valid_list:
-                        print(sht.getCell(i+1, col))
+                        eprint(sht.getCell(i+1, col))
                         first_index = data_list[i+1:].index(data_list[i]) + i + 1
                         if self.__handleDupRow(i+1, first_index+1, combRule):
                             data_list.pop(i) #update list
