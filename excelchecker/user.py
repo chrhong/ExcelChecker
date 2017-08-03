@@ -8,7 +8,7 @@ DBKEY = []
 
 def lprint(log_str):
     if LOG_FUNC_CHOOSE == 'default':
-        print log_str
+        print(log_str)
     else:
         LOG_BOX_PRINT(log_str)
     return
