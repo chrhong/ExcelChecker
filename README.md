@@ -16,7 +16,7 @@
         |
         |gui.py
         |
-        |checker.py             //Particurlar function to check detailed file
+        |user.py                //Particurlar function to check detailed file
         |
         |main.py
         |
