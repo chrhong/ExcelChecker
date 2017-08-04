@@ -158,10 +158,25 @@ class EasyExcel:
             cv2 = 0 if cv2 is None else cv2
             sht.Cells(row2, col2).Value = cv1 + cv2
 
-        def __isNotEmpty(self, row, col, value):
+        def __isNotEmpty(self, row, col, value, NoneKey_list):
             sht = self
+            mode = NoneKey_list[0]
+
             if 'None' == value:
-                sht.markCell(row, col, ERROR)
+                if mode == "Mark":
+                    sht.markCell(row, col, ERROR)
+                elif mode == "Fix":
+                    fix_col = NoneKey_list[1]
+                    sht.setCell(row, col, sht.getCell(row, fix_col))
+                elif mode == "Ignore":
+                    pass
+                elif mode == "Delete":
+                    sht.deleteRow(row)
+                    #not update datalist, would this cause issues ?
+                else:
+                    eprint("ERROR: unknown mode detect %s, mark error anyway" % mode)
+                    sht.markCell(row, col, ERROR)
+
                 return False
             else:
                 sht.markCell(row, col, NORMAL)
@@ -200,12 +215,13 @@ class EasyExcel:
             sht.deleteRow(dupRow)
             return True
 
-        def dupCombColumn(self, col, combRule, db_key):
+        def dupCombColumn(self, combRule, db_key):
             sht = self
+            title_line = combRule["TitleLine"].split(':')
+            NoneKey_list = combRule["NoneKey"].split(':')
+            col = title_line[0]
             data_tuple = sht.getColumn(col)
             data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
-
-            title_line = combRule["TitleLine"]
 
             valid_list = []
             i = len(data_list)
@@ -213,11 +229,11 @@ class EasyExcel:
                 #List  index range, [0,len()-1]
                 #Excel index range, [1,len()]
                 i = i - 1
-                if title_line == data_list[i]:#python 2.x .decode('unicode-escape')
+                if title_line[1] == data_list[i]:#python 2.x .decode('unicode-escape')
                     eprint("Meet title line to end check")
                     break
 
-                if self.__isNotEmpty(i+1, col, data_list[i]):
+                if self.__isNotEmpty(i+1, col, data_list[i], NoneKey_list):
                     if data_list[i] in valid_list:
                         eprint(sht.getCell(i+1, col))
                         first_index = data_list[i+1:].index(data_list[i]) + i + 1
@@ -232,7 +248,8 @@ class EasyExcel:
                             self.markCell(i+1, col, UNKNOW)
                         else:
                             self.__checkCheckRow(i+1, dbi, combRule)
-
+                elif NoneKey_list[0] == 'Delete':
+                    data_list.pop(i) #update list
             return
 
 class EasyGUI():

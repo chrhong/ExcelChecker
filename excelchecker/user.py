@@ -191,8 +191,7 @@ def index_check_new(xls,db,key):
     db_key = key
 
     index_rule = {
-        "KeyColumn" : 'E',
-        "TitleLine" : "开票索引",
+        "TitleLine" : "E:开票索引",
         "NoneKey" : "mark", #ignore/mark/correct/delete
         "Add" : [],
         "Keep" : [],
@@ -200,8 +199,22 @@ def index_check_new(xls,db,key):
         "CheckMethod" : [index_sell_price_check, index_sell_count_check],
     }
 
-    sht.dupCombColumn('E', index_rule, db_key)
+    sht.dupCombColumn(index_rule, db_key)
 
+def buy_check_new(xls,db,key):
+    sht = xls.Sheet(xls, 'Sheet1')
+    db_key = key
+
+    index_rule = {
+        "TitleLine" : "F:零件号码",
+        "NoneKey" : "mark", #ignore/mark/correct/delete
+        "Add" : [],
+        "Keep" : [],
+        "CheckItem" : ['K','I:K'],
+        "CheckMethod" : [index_sell_price_check, index_sell_count_check],
+    }
+
+    sht.dupCombColumn(index_rule, db_key)
 
 def buy_table_check(xls,db,key):
     note_cell_init(xls, 'Sheet1')
@@ -254,6 +267,21 @@ def buy_table_check(xls,db,key):
 
     return
 
+def stock_check_new(xls,db,key):
+    sht = xls.Sheet(xls, 'Sheet2')
+    db_key = key
+
+    index_rule = {
+        "TitleLine" : "A:关键字",
+        "NoneKey" : "Fix:C", #Ignore/Mark/Fix/Delete
+        "Add" : ['D','E','F','G','H'],
+        "Keep" : ['B','C'], #Keep not None
+        "CheckItem" : [],
+        "CheckMethod" : []
+    }
+
+    sht.dupCombColumn(index_rule, db_key)
+
 def stock_table_check(xls,db,key):
     # 销售成本=IF(D6+F6-H6=0,E6+G6,ROUND(H6*((E6+G6)/(D6+F6)),2))
     # Have new method need to be taken in use ?
@@ -300,7 +328,7 @@ def stock_table_check(xls,db,key):
 excel_handler = {
     '库存表' : stock_table_check,
     '索引表' : index_check_new,
-    '进项表' : buy_table_check
+    '进项表' : buy_check_new
 }
 
 def Checker(source_file, check_type):
