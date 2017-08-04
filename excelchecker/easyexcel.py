@@ -1,11 +1,14 @@
 #! -*- coding: utf-8 -*-
 from __init__ import *
+from icon import img
 
 #EasyExcel constants
 NORMAL = BLANK = 0
 GOOD = GREEN = 4
 ERROR = RED = 3
 UNKNOW = GREY = 15
+RESIZEBLE = EDITABLE = True
+UNRESIZEBLE = UNEDITABLE = False
 
 # CheckRule = {
 #     "TitleLine" : "title"
@@ -231,3 +234,82 @@ class EasyExcel:
                             self.__checkCheckRow(i+1, dbi, combRule)
 
             return
+
+class EasyGUI():
+    def __init__(self, title, size, resizeble):
+        self.gui = Tk()
+        self.fileEntry = None
+        self.radioValue = None
+        self.radioValueList = [""]
+        self.radioList = [None]*5
+        self.logWindow = None
+        self.logFlush = 0
+
+        tmp = open("tmp.ico","wb+")
+        tmp.write(base64.b64decode(img))
+        tmp.close()
+        self.gui.iconbitmap("tmp.ico")
+        os.remove("tmp.ico")
+
+        self.gui.title(title)
+        self.gui.geometry(size)
+        # self.gui.iconbitmap('ExcelChecker.ico')
+        self.gui.resizable(resizeble, resizeble)
+        easyLog.registerPrintCb(self.WriteLogWindow)
+
+    def Entry(self, title, length, place):
+        file_font = ("微软雅黑", 10, "normal")
+        file_location = StringVar()
+        self.fileEntry = Entry(self.gui, text=title, font=file_font, textvariable=file_location, borderwidth=2, width=length)
+        self.fileEntry.place(x=place[0], y=place[1], anchor=NW)
+    def Browser(self):
+        if not self.fileEntry:
+            eprint("file entry is not init! cannot continue！")
+            return
+        file_path = askopenfilename()
+        if not file_path is None:
+            self.fileEntry.delete(0,END)
+            self.fileEntry.insert(index=0, string=file_path)
+            eprint("打开文件:\n"+file_path)
+
+    def Button(self, title, size, place, action):
+        button_font = ("微软雅黑", 10, "bold")
+        open_button = Button(self.gui, fg="black", text=title, font=button_font, width=size[0], height=size[1], borderwidth=2, command=action)
+        open_button.place(x=place[0], y=place[1], anchor=NW)
+
+    def Thread(self, main_action):
+        th=threading.Thread(target=main_action,args=(self.fileEntry.get(),self.radioValue))
+        th.setDaemon(True)
+        th.start()
+        eprint("start action thread !")
+        # th.join()
+    def __radio_select(self, radio_var):
+        self.radioValue = radio_var.get()
+        selection = "你选择了" + self.radioValueList[self.radioValue]
+        eprint(selection)
+    def Radiobutton(self, title, value, place):
+        radio_font = ("微软雅黑", 12, "normal")
+        radio_var = IntVar()
+        eprint(value)
+        tempRadio = Radiobutton(self.gui, text=title, font=radio_font, variable=radio_var, value=value, command=lambda: self.__radio_select(radio_var))
+        tempRadio.place(x=place[0], y=place[1], anchor=NW)
+        if title not in self.radioList:
+            self.radioValueList.insert(value,title)
+        return tempRadio
+    def LogWindow(self, color, size, place, editable):
+        log_font = ("微软雅黑", 10, "normal")
+        self.logWindow = Text(self.gui, fg=color[0], bg=color[1], font=log_font, relief=SUNKEN, width=size[0], height=size[1])
+        self.logWindow.place(x=place[0], y=place[1], anchor=NW)
+        if not editable:
+            self.logWindow.bind("<KeyPress>", lambda e:"break")
+    def WriteLogWindow(self, log_str):
+        self.logFlush = self.logFlush + 1
+        log_str = str(log_str)
+        self.logWindow.insert(END, log_str + '\n')
+        self.logWindow.see(END)
+        if self.logFlush >= 10:
+            self.logFlush = 0
+            self.logWindow.update()
+
+    def mainloop(self):
+        self.gui.mainloop()

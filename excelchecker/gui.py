@@ -51,7 +51,7 @@ def run():
 
     root.title("ExcelChecker v0.2")
     root.geometry('500x205')
-    # root.iconbitmap('D:\\userdata\\chrhong\\Desktop\\Python\\X\\ExcelChecker.ico')
+    # root.iconbitmap('ExcelChecker.ico')
     root.resizable(False, False)
     file_location = StringVar()
 
@@ -78,10 +78,9 @@ def run():
     R3.place(x=210, y=60, anchor=NW)
 
     button_font = ("微软雅黑", 10, "bold")
-    button_browse = Button(root, fg="black", text='打开', font=button_font, width=8, borderwidth=2, command=lambda: browse(source_file))
-    button_browse.place(x=410, y=17, anchor=NW)
-
-    check_browse = Button(root, fg="black", bg="green", text='检查', font=button_font, width=8, height=4, borderwidth=3, command=lambda: back_job(source_file.get()))
-    check_browse.place(x=410, y=100, anchor=NW)
+    open_button = Button(root, fg="black", text='打开', font=button_font, width=8, borderwidth=2, command=lambda: browse(source_file))
+    open_button.place(x=410, y=17, anchor=NW)
+    check_button = Button(root, fg="black", bg="green", text='检查', font=button_font, width=8, height=4, borderwidth=3, command=lambda: back_job(source_file.get()))
+    check_button.place(x=410, y=100, anchor=NW)
 
     root.mainloop()
