@@ -2,22 +2,70 @@
 from __init__ import *
 from icon import img
 
-#EasyExcel constants
-NORMAL = BLANK = 0
-GOOD = GREEN = 4
-ERROR = RED = 3
-UNKNOW = GREY = 15
-RESIZEBLE = EDITABLE = True
-UNRESIZEBLE = UNEDITABLE = False
+HANG = True
+NOHANG = False
 
-# CheckRule = {
-#     "TitleLine" : "title"
-#     "NoneKey" : "mark", #ignore/mark/correct/delete
-#     "Add" : ['A','B','C','D'],
-#     "Keep" : "last",
-#     "CheckItem" : ['A:C','B'],
-#     "CheckMethod" : [func1, func2]
-# }
+cn_pattern = re.compile(u'[\u4e00-\u9fa5]+')
+def contain_cn(word):
+    global cn_pattern
+    match = cn_pattern.search(str(word).decode('utf8'))
+    return match
+
+def RaiseException(hang=NOHANG):
+    eprint(traceback.format_exc())
+    eprint("Stop to see what error occurs!!!")
+    if hang:
+        eprint("You can Exit with 'Ctrl + C'...")
+        while(1):
+            pass
+    sys.exit()
+
+
+class Registry:
+    """
+    Windows Registry
+    """
+    def __init__(self, keyword):
+        self.key = keyword
+        if getattr(sys, 'frozen', False):
+            root_path = os.path.dirname(sys.executable)
+        elif __file__:
+            root_path = os.path.dirname(__file__)
+
+        config_path = root_path + "/" + "installed"
+
+        try:
+            with open(config_path, 'r') as f:
+                eprint("[INFO] tool is already registered to contextmemu")
+        except:
+            self.__create(root_path, self.key)
+            with open(config_path, 'a') as f:
+                eprint("[INFO] register tool to contextmemu")
+            sys.exit(0)
+
+    def __create(self, workpath, keyword):
+        self.key = keyword
+        workpath = workpath.replace('/', '\\')
+        eprint('---')
+        eprint(workpath)
+
+        target_icon = workpath + "\\" + keyword
+        target_cmd = workpath + "\\" + keyword + " \"%1\""
+
+        try:
+            #Not check if it is already exist, since we can overwrite it
+            subkey = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,"*\\shell")
+            targetkey = winreg.CreateKey(subkey,keyword.split('.')[0])
+            winreg.SetValueEx(targetkey, "Icon", 0,  winreg.REG_SZ, target_icon)
+            winreg.SetValue(targetkey, "command",  winreg.REG_SZ, target_cmd)
+            winreg.CloseKey(subkey)
+        except OSError:
+            eprint("[Error] Contextmenu register failed!")
+            RaiseException(HANG)
+            return False
+        else:
+            return True
+
 
 class EasyLog:
     """
@@ -39,6 +87,23 @@ class EasyLog:
 easyLog = EasyLog()
 eprint = easyLog.lprint
 
+# EasyExcel_CheckRule = {
+#     "TitleLine" : "E:开票索引",
+#     "NoneKey" : "Mark", #Ignore/Mark/Fix/Delete
+#     "Add" : [],
+#     "Keep" : [],
+#     "CheckItem" : ['C','B:C'],
+#     "CheckMethod" : [index_sell_price_check, index_sell_count_check],
+# }
+
+#EasyExcel constants
+NORMAL = BLANK = 0
+GOOD = GREEN = 4
+ERROR = RED = 3
+UNKNOW = GREY = 15
+RESIZEBLE = EDITABLE = True
+UNRESIZEBLE = UNEDITABLE = False
+
 class EasyExcel:
     """
     To handle Excel easier.
@@ -48,12 +113,29 @@ class EasyExcel:
     def __init__(self, filename=None):
         """Open given file or create a new file"""
         self.xlApp = win32.Dispatch('Excel.Application')
+        self.database = []
         if filename:
             self.filename = filename
             self.xlBook = self.xlApp.Workbooks.Open(filename)
         else:
             self.xlBook = self.xlApp.Workbooks.Add()
             self.filename = ''
+
+    def dbInit(self, db_file):
+        db = self.database
+        try:
+            with open(db_file, 'r') as fd:
+                for line in fd.readlines():
+                    if line.strip().startswith('#') or '' == line.strip():
+                        continue
+                    line = ''.join(line.strip().split(' '))
+                    line_list = line.split(';')
+                    db.append(line_list)
+            # eprint(db[0][1].strip('[]').split(',')[0])
+            return db
+        except:
+            eprint("[ERROR] %s not exist" % db_file)
+            RaiseException()
 
     def save(self, newfilename=None):
         """save to new file if file name is given"""
@@ -168,6 +250,8 @@ class EasyExcel:
                 elif mode == "Fix":
                     fix_col = NoneKey_list[1]
                     sht.setCell(row, col, sht.getCell(row, fix_col))
+                    sht.markCell(row, col, NORMAL)
+                    return True #need dup check again after fixed
                 elif mode == "Ignore":
                     pass
                 elif mode == "Delete":
@@ -185,7 +269,7 @@ class EasyExcel:
         def __checkCheckRow(self, row, dbi, combRule):
             targetL = combRule["CheckItem"]
             methodL = combRule["CheckMethod"]
-            keyCol = combRule["KeyColumn"]
+            keyCol = combRule["TitleLine"].split(':')[0]
 
             target_len = len(targetL)
             i = 0
@@ -206,7 +290,7 @@ class EasyExcel:
                 return False
 
             for acol in add_list:
-                sht.cellAdd(dupRow, chr(acol), fstRow, chr(acol))
+                sht.cellAdd(dupRow, acol, fstRow, acol)
 
             for kcol in keep_list:
                 if  'None' == sht.getCell(fstRow, kcol):
@@ -307,7 +391,6 @@ class EasyGUI():
     def Radiobutton(self, title, value, place):
         radio_font = ("微软雅黑", 12, "normal")
         radio_var = IntVar()
-        eprint(value)
         tempRadio = Radiobutton(self.gui, text=title, font=radio_font, variable=radio_var, value=value, command=lambda: self.__radio_select(radio_var))
         tempRadio.place(x=place[0], y=place[1], anchor=NW)
         if title not in self.radioList:
