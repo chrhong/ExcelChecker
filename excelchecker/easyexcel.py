@@ -72,14 +72,17 @@ class EasyLog:
     To manage print functions
     """
     def __init__(self):
-        self.print_list = [print,]
+        #print in python 2.x is not function, cannot put into list
+        self.print_list = []
     def registerPrintCb(self, print_func):
         if print_func not in self.print_list:
             self.print_list.append(print_func)
     def removePrintCb(self, print_func):
         if print_func not in self.print_list:
             self.print_list.pop(print_func)
-    def lprint(self, log_str):
+    def lprint(self, log):
+        log_str = str(log)
+        print(log_str).decode('utf-8') #print in python 2.x
         for print_func in self.print_list:
             print_func(log_str)
 
@@ -221,6 +224,29 @@ class EasyExcel:
             sht = self.xlSheet
             nrows = sht.UsedRange.Rows.Count
             return sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
+        def swapColumn(self, col1_tuple, col2_tuple):
+            """
+            swap two columns:
+            Eg: Input ('B', 'C'), ('D', 'E')
+            The B<->D, C<->E
+
+            Note: MUST BE col1_tuple[i] < col2_tuple[i]
+            """
+            sht = self.xlSheet
+            col_num = len(col1_tuple)
+            i = 0
+            while i < col_num:
+                #.Copy() can only called once one time
+                #Make two column copy together will mix up value
+                colCopy = sht.Columns(col1_tuple[i]).Copy()
+                sht.Columns(col2_tuple[i]).Insert(colCopy)
+                sht.Columns(col1_tuple[i]).Delete()
+
+                colCopy = sht.Columns(col2_tuple[i]).Copy()
+                sht.Columns(col1_tuple[i]).Insert(colCopy)
+                sht.Columns(chr(ord(col2_tuple[i]) + 1)).Delete()
+
+                i = i + 1
 
         def getRange(self, row1, col1, row2, col2):
             """return a 2d array (i.e. tuple of tuples)"""

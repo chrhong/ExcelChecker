@@ -15,5 +15,5 @@ import pythoncom
 import win32com.client as win32
 import winreg as winreg #python 2.x _winreg
 
-# reload(sys)
-# sys.setdefaultencoding('utf-8')
+reload(sys)
+sys.setdefaultencoding('utf-8')

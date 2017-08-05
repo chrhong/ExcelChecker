@@ -125,7 +125,7 @@ def userChecker(source_file, type_list, check_type):
         RaiseException()
 
 def gui_mainloop():
-    root = EasyGUI("ExcelChecker v0.2", '500x205', RESIZEBLE)
+    root = EasyGUI("ExcelChecker v0.2", '500x205', UNRESIZEBLE)
     root.Entry("Source file", 48, (10,20))
     root.LogWindow(("white","black"), (48,5), (10,100), UNEDITABLE)
     r1 = root.Radiobutton("进项表", 1, (10,60))
