@@ -379,7 +379,15 @@ class EasyGUI():
         open_button.place(x=place[0], y=place[1], anchor=NW)
 
     def Thread(self, main_action):
-        th=threading.Thread(target=main_action,args=(self.fileEntry.get(),self.radioValue))
+        source_file = self.fileEntry.get()
+        source_file = source_file.replace('\\', '/').replace('\"', '')
+        check_type = self.radioValue
+
+        if source_file == "" or check_type == 0:
+            eprint("[ERROR]未选择文件 或者 未选择表格类型")
+            return
+
+        th=threading.Thread(target=main_action,args=(source_file, self.radioValueList, check_type))
         th.setDaemon(True)
         th.start()
         eprint("start action thread !")
@@ -394,8 +402,8 @@ class EasyGUI():
         tempRadio = Radiobutton(self.gui, text=title, font=radio_font, variable=radio_var, value=value, command=lambda: self.__radio_select(radio_var))
         tempRadio.place(x=place[0], y=place[1], anchor=NW)
         if title not in self.radioList:
-            self.radioValueList.insert(value,title)
-        return tempRadio
+            self.radioValueList.insert(value, title)
+            self.radioList.insert(value, tempRadio)
     def LogWindow(self, color, size, place, editable):
         log_font = ("微软雅黑", 10, "normal")
         self.logWindow = Text(self.gui, fg=color[0], bg=color[1], font=log_font, relief=SUNKEN, width=size[0], height=size[1])

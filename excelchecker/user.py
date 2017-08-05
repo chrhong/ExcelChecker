@@ -40,7 +40,7 @@ def index_sell_price_check(sht, row, dbi, params_list):
     else:
         return NORMAL
 
-def sale_table_check(xls,db,key):
+def sale_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -56,7 +56,7 @@ def sale_table_check(xls,db,key):
     sht.dupCombColumn(sale_rule, db_key)
     return sht
 
-def buy_table_check(xls,db,key):
+def buy_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -72,7 +72,7 @@ def buy_table_check(xls,db,key):
     sht.dupCombColumn(buy_rule, db_key)
     return sht
 
-def stock_table_check(xls,db,key):
+def stock_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet2')
     db_key = key
 
@@ -88,37 +88,34 @@ def stock_table_check(xls,db,key):
     sht.dupCombColumn(stock_rule, db_key)
     return sht
 
+
 excel_handler = {
     '库存表' : stock_table_check,
-    '索引表' : sale_table_check,
+    '销售表' : sale_table_check,
     '进项表' : buy_table_check
 }
 
-def Checker(source_file, check_type):
-    type_list = ["","进项表","索引表","库存表"]
+def database_key_get(xls, type_list, check_type, source_file):
+    db = []
+    db_key = []
+
+    if not type_list[check_type] == '库存表':
+        #product.db read, stock do not need db
+        db = xls.dbInit(source_file[:source_file.rfind('/')+1] + 'product.db')
+        for li in db : db_key.append(li[0])
+
+    return db_key
+
+def userChecker(source_file, type_list, check_type):
     try:
         #should be called in each thread, otherwise, execl open failed.
         pythoncom.CoInitialize()
-
-        if source_file == "" or check_type == 0:
-            eprint("[ERROR]未选择文件 或者 未选择表格类型")
-            return
-
-        source_file = source_file.replace('\\', '/').replace('\"', '')
-        eprint(source_file)
-
+        # eprint(source_file)
         eprint('[INFO] 开始 %s 检查...' % type_list[check_type])
         start = time.clock()
         xls = EasyExcel(source_file)
-
-        cost_db = []
-        cost_key = []
-        if not type_list[check_type] == '库存表':
-            #product.db read, stock do not need db
-            cost_db = xls.dbInit(source_file[:source_file.rfind('/')+1] + 'product.db')
-            for li in cost_db : cost_key.append(li[0])
-
-        sht = excel_handler[type_list[check_type]](xls,cost_db,cost_key)
+        db_key = database_key_get(xls, type_list, check_type, source_file)
+        sht = excel_handler[type_list[check_type]](xls, db_key)
         xls.save()
         end = time.clock()
         eprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
@@ -135,7 +132,7 @@ def gui_mainloop():
     r2 = root.Radiobutton("销售表", 2, (110,60))
     r3 = root.Radiobutton("库存表", 3, (210,60))
     root.Button('打开', (8,1), (410,17), root.Browser)
-    root.Button('检查', (8,4), (410,100), lambda:root.Thread(Checker))
+    root.Button('检查', (8,4), (410,100), lambda:root.Thread(userChecker))
     root.mainloop()
 
 def oneClick_mainloop():
