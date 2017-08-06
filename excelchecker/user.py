@@ -88,11 +88,18 @@ def stock_table_check(xls, key):
     sht.dupCombColumn(stock_rule, db_key)
     return sht
 
+def test_check(xls, key):
+    sht = xls.Sheet(xls, 'Sheet3')
+    sheetArray = sht.getSheet()
+    numpy.save("test.npy", sheetArray)
+    exData = numpy.load("test.npy")
+    sht.setRange(1, 'I', [exData.T[2],])
+    return sht
 
 excel_handler = {
     '库存表' : stock_table_check,
     '销售表' : sale_table_check,
-    '进项表' : buy_table_check
+    '进项表' : test_check#buy_table_check
 }
 
 def database_key_get(xls, type_list, check_type, source_file):

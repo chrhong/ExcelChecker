@@ -210,8 +210,9 @@ class EasyExcel:
         def deleteRow(self, row):
             self.xlSheet.Rows(row).Delete()
 
-        def inserCol(self, col):
-            self.xlSheet.Columns(col).Insert(1)
+        def inserCol(self, col, data=None):
+            insertData = 1 if data is None else data
+            self.xlSheet.Columns(col).Insert(insertData)
         def deleteCol(self, col):
             self.xlSheet.Columns(col).Delete()
 
@@ -239,6 +240,7 @@ class EasyExcel:
                 #.Copy() can only called once one time
                 #Make two column copy together will mix up value
                 colCopy = sht.Columns(col1_tuple[i]).Copy()
+                print(colCopy)
                 sht.Columns(col2_tuple[i]).Insert(colCopy)
                 sht.Columns(col1_tuple[i]).Delete()
 
@@ -247,11 +249,25 @@ class EasyExcel:
                 sht.Columns(chr(ord(col2_tuple[i]) + 1)).Delete()
 
                 i = i + 1
+        def getSheet(self):
+            sht = self.xlSheet
+            ncol = sht.UsedRange.Columns.Count
+            nrow = sht.UsedRange.Rows.Count
+            return self.getRange(1,1,nrow,ncol)
 
         def getRange(self, row1, col1, row2, col2):
             """return a 2d array (i.e. tuple of tuples)"""
             sht = self.xlSheet
             return sht.Range(sht.Cells(row1, col1), sht.Cells(row2, col2)).Value
+        def setRange(self, start_row, start_col, data_array):
+            """
+            set a 2d array, must be a 2d array
+            Col set to col, row set to row
+            """
+            sht = self.xlSheet
+            end_row = start_row + len(data_array) - 1
+            end_col = chr(ord(start_col) + len(data_array[0]) - 1) #only support col < Z
+            sht.Range(sht.Cells(start_row, start_col), sht.Cells(end_row, end_col)).Value = data_array
 
         def addPicture(self, pictureName, Left, Top, Width, Height):
             "Insert a picture in sheet"
