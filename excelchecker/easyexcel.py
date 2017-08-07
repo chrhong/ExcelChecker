@@ -82,7 +82,11 @@ class EasyLog:
             self.print_list.pop(print_func)
     def lprint(self, log):
         log_str = str(log)
-        print(log_str).decode('utf-8') #print in python 2.x
+        if IS_PYTHON2:
+            print(log_str).decode('utf-8') #print in python 2.x
+        else:
+            print(log_str)
+
         for print_func in self.print_list:
             print_func(log_str)
 
@@ -205,12 +209,12 @@ class EasyExcel:
             tag_index = self.taglist.index(tag)
             return self.statistic[tag_index]
 
-        def inserRow(self, row):
+        def insertRow(self, row):
             self.xlSheet.Rows(row).Insert(1)
         def deleteRow(self, row):
             self.xlSheet.Rows(row).Delete()
 
-        def inserCol(self, col, data=None):
+        def insertCol(self, col, data=None):
             insertData = 1 if data is None else data
             self.xlSheet.Columns(col).Insert(insertData)
         def deleteCol(self, col):
@@ -224,6 +228,7 @@ class EasyExcel:
         def getColumn(self, col):
             sht = self.xlSheet
             nrows = sht.UsedRange.Rows.Count
+            print(nrows)
             return sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
         def swapColumn(self, col1_tuple, col2_tuple):
             """
@@ -240,7 +245,6 @@ class EasyExcel:
                 #.Copy() can only called once one time
                 #Make two column copy together will mix up value
                 colCopy = sht.Columns(col1_tuple[i]).Copy()
-                print(colCopy)
                 sht.Columns(col2_tuple[i]).Insert(colCopy)
                 sht.Columns(col1_tuple[i]).Delete()
 
