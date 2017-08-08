@@ -387,8 +387,8 @@ class EasyGUI():
         self.gui = Tk()
         self.fileEntry = None
         self.radioValue = None
-        self.radioValueList = [""]
-        self.radioList = [None]*5
+        self.radioVar = IntVar()
+        self.radioList = [""]
         self.logWindow = None
         self.logFlush = 0
 
@@ -440,16 +440,14 @@ class EasyGUI():
         # th.join()
     def __radio_select(self, radio_var):
         self.radioValue = radio_var.get()
-        selection = "你选择了" + self.radioValueList[self.radioValue]
+        selection = "你选择了" + self.radioList[self.radioValue]
         eprint(selection)
     def Radiobutton(self, title, value, place):
         radio_font = ("微软雅黑", 12, "normal")
-        radio_var = IntVar()
-        tempRadio = Radiobutton(self.gui, text=title, font=radio_font, variable=radio_var, value=value, command=lambda: self.__radio_select(radio_var))
+        tempRadio = Radiobutton(self.gui, text=title, font=radio_font, variable=self.radioVar, value=value, command=lambda:self.__radio_select(self.radioVar))
         tempRadio.place(x=place[0], y=place[1], anchor=NW)
         if title not in self.radioList:
-            self.radioValueList.insert(value, title)
-            self.radioList.insert(value, tempRadio)
+            self.radioList.insert(value, title)
     def LogWindow(self, color, size, place, editable):
         log_font = ("微软雅黑", 10, "normal")
         self.logWindow = Text(self.gui, fg=color[0], bg=color[1], font=log_font, relief=SUNKEN, width=size[0], height=size[1])
