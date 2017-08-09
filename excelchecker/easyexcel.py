@@ -11,6 +11,9 @@ def contain_cn(word):
     match = cn_pattern.search(str(word).decode('utf8'))
     return match
 
+def NP_FILENAME(key_str):
+    return key_str + '.npy'
+
 def RaiseException(hang=NOHANG):
     eprint(traceback.format_exc())
     eprint("Stop to see what error occurs!!!")
@@ -228,8 +231,10 @@ class EasyExcel:
         def getColumn(self, col):
             sht = self.xlSheet
             nrows = sht.UsedRange.Rows.Count
-            print(nrows)
-            return sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
+            data_tuple = sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
+            #this is paticaularly designed for the project, not sure if it will suitable for others
+            data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
+            return data_list
         def swapColumn(self, col1_tuple, col2_tuple):
             """
             swap two columns:
@@ -350,8 +355,7 @@ class EasyExcel:
             title_line = combRule["TitleLine"].split(':')
             NoneKey_list = combRule["NoneKey"].split(':')
             col = title_line[0]
-            data_tuple = sht.getColumn(col)
-            data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
+            data_list = sht.getColumn(col)
 
             valid_list = []
             i = len(data_list)
@@ -381,6 +385,13 @@ class EasyExcel:
                 elif NoneKey_list[0] == 'Delete':
                     data_list.pop(i) #update list
             return
+
+        def dumpColumns(self, npfile_name, col_tuple):
+            sht = self
+            datalist = []
+            for col in col_tuple:
+                datalist.append(sht.getColumn(col))
+            numpy.save(npfile_name, datalist)
 
 class EasyGUI():
     def __init__(self, title, size, resizeble):
@@ -433,7 +444,7 @@ class EasyGUI():
             eprint("[ERROR]未选择文件 或者 未选择表格类型")
             return
 
-        th=threading.Thread(target=main_action,args=(source_file, self.radioValueList, check_type))
+        th=threading.Thread(target=main_action,args=(source_file, self.radioList, check_type))
         th.setDaemon(True)
         th.start()
         eprint("start action thread !")
