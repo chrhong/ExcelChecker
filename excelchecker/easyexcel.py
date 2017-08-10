@@ -150,7 +150,7 @@ class EasyExcel:
     def save(self, newfilename=None):
         """save to new file if file name is given"""
         if newfilename:
-            self.filename = newfilename
+            # self.filename = newfilename
             self.xlBook.SaveAs(newfilename)
         else:
             self.xlBook.Save()
@@ -392,6 +392,9 @@ class EasyExcel:
             for col in col_tuple:
                 datalist.append(sht.getColumn(col))
             numpy.save(npfile_name, datalist)
+
+        def modifyColData(self, modify_rule):
+
 
 class EasyGUI():
     def __init__(self, title, size, resizeble):

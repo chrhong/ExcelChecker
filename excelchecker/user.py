@@ -40,7 +40,7 @@ def index_sell_price_check(sht, row, dbi, params_list):
     else:
         return NORMAL
 
-def sale_table_check(xls, key):
+def sale_table_check(xls, key, work_path):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -56,7 +56,7 @@ def sale_table_check(xls, key):
     sht.dupCombColumn(sale_rule, db_key)
     return sht
 
-def buy_table_check(xls, key):
+def buy_table_check(xls, key, work_path):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -70,18 +70,45 @@ def buy_table_check(xls, key):
     }
 
     sht.dupCombColumn(buy_rule, db_key)
+
+    xls.save("D:\\home\\ExcelChecker\\new.xlsx")
     return sht
 
-def generateNewStockFile(xls, key):
+
+NPDATA_FOLDER = 'npdata'
+def is_ready_for_generate_new_stockfile(work_path, npdata_list):
+    if os.path.exists(work_path + NPDATA_FOLDER):
+        for i in os.listdir(work_path + NPDATA_FOLDER):
+            npdata_list.append(i)
+    else:
+        return False
+
+    if 'buy.npy' in npdata_list and 'sale.npy' in npdata_list:
+        return True
+    else:
+        return False
+
+def combine_excel():
     sht = xls.Sheet(xls, 'Sheet1')
     sht.dumpColumns(NP_FILENAME('buy'), ('F','I','K'))
     sht.dumpColumns(NP_FILENAME('sale'), ('E','B','D'))
     # sht.swapColumn(('D','E'), ('J', 'K'))
     exData = numpy.load(NP_FILENAME('buy'))
 
-    return sht
+def generate_new_stockfile(sht, work_path, title_line):
+    eprint('[INFO] 准备 生成新的库存表...检查环境...')
+    npdata_list = []
+    if 0 == sht.getStatistic(ERROR) and is_ready_for_generate_new_stockfile(work_path, npdata_list):
+        eprint('[INFO] 开始 生成新的库存表...')
+        new_stockfile = work_path + NP_FILENAME + '/' + "new_stock_file.xlsx"
+        sht.modifyData()
+        sht.xls.save(new_stockfile)
+        eprint("[INFO] 成功 生成新的库存表")
+        eprint("[INFO] 查看结果: %s" % (new_stockfile))
+    else:
+        eprint('[ERROR] 进项表和销售表仍有问题，请修改完之后重新检查！')
 
-def stock_table_check(xls, key):
+def stock_table_check(xls, key, work_path):
     sht = xls.Sheet(xls, 'Sheet2')
     db_key = key
 
@@ -96,10 +123,19 @@ def stock_table_check(xls, key):
 
     sht.dupCombColumn(stock_rule, db_key)
 
+    modify_rule = {
+        "key" : stock_rule["TitleLine"],
+        "swap" : [('D','E'), ('J', 'K')],
+        "set" : [],
+        "replace" : ["sale:B:C:D","buy:B:C:D"]
+    }
+
+    sht.modifyColData(modify_rule)
+
     return sht
 
 excel_handler = {
-    '库存表' : test_check,#stock_table_check,
+    '库存表' : stock_table_check,
     '销售表' : sale_table_check,
     '进项表' : buy_table_check
 }
@@ -115,19 +151,6 @@ def database_key_get(xls, type_list, check_type, source_file):
 
     return db_key
 
-NPDATA_FOLDER = 'npdata'
-def is_ready_for_generate_new_stockfile(work_path, npdata_list):
-    if os.path.exists(work_path + NPDATA_FOLDER):
-        for i in os.listdir(work_path + NPDATA_FOLDER):
-            npdata_list.append(i)
-    else:
-        return False
-
-    if 'buy.npy' in npdata_list and 'sale.npy' in npdata_list:
-        return True
-    else:
-        return False
-
 def userChecker(source_file, type_list, check_type):
     try:
         #should be called in each thread, otherwise, execl open failed.
@@ -135,33 +158,16 @@ def userChecker(source_file, type_list, check_type):
         # eprint(source_file)
         eprint('[INFO] 开始 %s 检查...' % type_list[check_type])
         start = time.clock()
+        work_path = source_file[:source_file.rfind('/')+1]
         xls = EasyExcel(source_file)
         db_key = database_key_get(xls, type_list, check_type, source_file)
-        sht = excel_handler[type_list[check_type]](xls, db_key)
-        err_count = sht.getStatistic(ERROR)
+        sht = excel_handler[type_list[check_type]](xls, db_key, work_path)
         xls.save()
         end = time.clock()
         eprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
-        eprint("[INFO] 错误: %d 个, 无法匹配: %d 个" % (err_count, sht.getStatistic(UNKNOW)))
+        eprint("[INFO] 错误: %d 个, 无法匹配: %d 个" % (sht.getStatistic(ERROR), sht.getStatistic(UNKNOW)))
         xls.close()
-
-        if type_list[check_type] == '库存表' and err_count == 0:
-            eprint('[INFO] 准备 生成新的库存表...检查环境...')
-            npdata_list = []
-            work_path = source_file[:source_file.rfind('/')+1]
-            if is_ready_for_generate_new_stockfile(work_path, npdata_list):
-                eprint('[INFO] 开始 生成新的库存表...')
-                new_stockfile = "new_stock_file.xlsx"
-                start = time.clock()
-                xls = EasyExcel(source_file)
-                xls.save(work_path + NP_FILENAME + '/' + new_stockfile)
-                end = time.clock()
-                eprint("[INFO] %s 成功生成新的库存表, 耗时: %f 秒" % (type_list[check_type], end - start))
-                eprint("[INFO] 查看结果: %s" % (work_path + NP_FILENAME + new_stockfile))
-                xls.close()
-            else:
-                eprint('[ERROR] 进项表和销售表仍有问题，请修改完之后重新检查！')
-     except:
+    except:
         RaiseException()
 
 def gui_mainloop():
