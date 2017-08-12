@@ -113,6 +113,7 @@ ERROR = RED = 3
 UNKNOW = GREY = 15
 RESIZEBLE = EDITABLE = True
 UNRESIZEBLE = UNEDITABLE = False
+NUMPY_FOLDER = 'npdata'
 
 class EasyExcel:
     """
@@ -124,8 +125,10 @@ class EasyExcel:
         """Open given file or create a new file"""
         self.xlApp = win32.Dispatch('Excel.Application')
         self.database = []
+        self.workpath = ""
         if filename:
             self.filename = filename
+            self.workpath = filename[:filename.rfind('/')+1]
             self.xlBook = self.xlApp.Workbooks.Open(filename)
         else:
             self.xlBook = self.xlApp.Workbooks.Add()
@@ -187,6 +190,15 @@ class EasyExcel:
         def setCell(self, row, col, value):
             """set value of one cell"""
             self.xlSheet.Cells(row, col).Value = value
+        def setCells(self, xytuple, valuetuple):
+            xy_num = len(xytuple)
+            i = 0
+            while i < xy_num:
+                row = int(xytuple[i].split('-')[0])
+                col = xytuple[i].split('-')[1]
+                value = valuetuple[i]
+                self.setCell(row, col, value)
+                i = i + 1
 
         def setCellformat(self, sheet, row, col):
             "format performance of one cell"
@@ -200,6 +212,10 @@ class EasyExcel:
             sht.Rows(row).RowHeight = 30                    #行高
             # sht.Cells(row, col).HorizontalAlignment = self.xls.xlRight
             sht.Cells(row, col).VerticalAlignment = -4135
+
+        def setColumnsFormatText(self, col_list):
+            for col in col_list:
+                self.xlSheet.Columns(col).NumberFormatLocal = "@"
 
         def markCell(self, row, col, tag):
             """mark a cell with color/tag, and collect statistics"""
@@ -235,7 +251,7 @@ class EasyExcel:
             #this is paticaularly designed for the project, not sure if it will suitable for others
             data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
             return data_list
-        def swapColumn(self, col1_tuple, col2_tuple):
+        def swapColumns(self, col1_tuple, col2_tuple):
             """
             swap two columns:
             Eg: Input ('B', 'C'), ('D', 'E')
@@ -249,15 +265,43 @@ class EasyExcel:
             while i < col_num:
                 #.Copy() can only called once one time
                 #Make two column copy together will mix up value
-                colCopy = sht.Columns(col1_tuple[i]).Copy()
-                sht.Columns(col2_tuple[i]).Insert(colCopy)
-                sht.Columns(col1_tuple[i]).Delete()
+                # colCopy = sht.Columns(col1_tuple[i]).Value#Copy()
+                # sht.Columns(col2_tuple[i]).Insert(colCopy)
+                # sht.Columns(col1_tuple[i]).Delete()
 
-                colCopy = sht.Columns(col2_tuple[i]).Copy()
-                sht.Columns(col1_tuple[i]).Insert(colCopy)
-                sht.Columns(chr(ord(col2_tuple[i]) + 1)).Delete()
+                # colCopy = sht.Columns(col2_tuple[i]).Value#Copy()
+                # sht.Columns(col1_tuple[i]).Insert(colCopy)
+                # sht.Columns(chr(ord(col2_tuple[i]) + 1)).Delete()
+
+                colCopy = self.getColumn(col1_tuple[i])
+                self.insertCol(col2_tuple[i], colCopy)
+                self.deleteCol(col1_tuple[i])
+
+                colCopy = self.getColumn(col2_tuple[i])
+                self.insertCol(col1_tuple[i], colCopy)
+                self.deleteCol(chr(ord(col2_tuple[i]) + 1))
 
                 i = i + 1
+
+        def swapCells(self, cell1_tuple, cell2_tuple):
+            """
+            swap two cells:
+            Eg: Input ('X1-Y1', 'X3-Y3'), ('X2-Y2', 'X4-Y4')
+            Then [X1,Y1]<->[X3,Y3], [X2,Y2]<->[X4,Y4]
+            """
+            cell_num = len(cell1_tuple)
+            i = 0
+            while i < cell_num:
+                row1 = int(cell1_tuple[i].split('-')[0])
+                col1 = cell1_tuple[i].split('-')[1]
+                row2 = int(cell2_tuple[i].split('-')[0])
+                col2 = cell2_tuple[i].split('-')[1]
+                cell1_value = self.getCell(row1, col1)
+                print(cell1_value)
+                self.setCell(row1, col1, self.getCell(row2, col2))
+                self.setCell(row2, col2, cell1_value)
+                i = i + 1
+
         def getSheet(self):
             sht = self.xlSheet
             ncol = sht.UsedRange.Columns.Count
@@ -386,14 +430,119 @@ class EasyExcel:
                     data_list.pop(i) #update list
             return
 
+        def __get_npfilename(self,npfile):
+            work_path = self.xls.workpath
+            npdata_list = []
+            expect_npfile = work_path + NUMPY_FOLDER + '/' + npfile + ".npy"
+            if os.path.exists(work_path + NUMPY_FOLDER):
+                for i in os.listdir(work_path + NUMPY_FOLDER):
+                    npdata_list.append(i)
+            else:
+                os.makedirs(work_path + NUMPY_FOLDER)
+                return expect_npfile
+
+            i = 0
+            while True:
+                if i == 0:
+                    temp_file = npfile + ".npy"
+                else:
+                    temp_file = npfile + str(i) + ".npy"
+
+                if temp_file in npdata_list:
+                    i = i +  1
+                else:
+                    return work_path + NUMPY_FOLDER + '/' + temp_file
+
         def dumpColumns(self, npfile_name, col_tuple):
-            sht = self
+            npfile_abs = self.__get_npfilename(npfile_name)
             datalist = []
             for col in col_tuple:
-                datalist.append(sht.getColumn(col))
-            numpy.save(npfile_name, datalist)
+                datalist.append(self.getColumn(col))
+            numpy.save(npfile_abs, datalist)
 
-        def modifyColData(self, modify_rule):
+        def __npyEnvCheck(self, replist, npdata_list):
+            work_path = self.xls.workpath
+            if os.path.exists(work_path + NUMPY_FOLDER):
+                for i in os.listdir(work_path + NUMPY_FOLDER):
+                    npdata_list.append(i)
+            else:
+                return False
+
+            for item in replist:
+                npyfile = item.split(':')[0] + ".npy"
+                if not npyfile in npdata_list:
+                    return False
+
+            return True
+        def __oneNpyReplace(self, keylist, collist, npyname, titles=None):
+            npfile_abs = self.xls.workpath + NUMPY_FOLDER + '/' + npyname
+            keycol = keylist[0]
+
+            xls_keylist = self.getColumn(keycol)
+            if len(keylist) == 3:
+                xls_keylist.pop()
+            iRow = len(xls_keylist) + 1 #insert above the row
+
+            npdata = numpy.load(npfile_abs)
+            npdatakey = list(npdata[0])
+            for item in npdatakey:
+                if titles and item in titles:
+                    continue #ignore titles
+                indexOfnp = npdatakey.index(item)
+                if item in xls_keylist:
+                    row = xls_keylist.index(item) + 1
+                else:
+                    self.insertRow(iRow) #insert above the row
+                    self.setCell(iRow, keycol, item)
+                    row = iRow
+                    xls_keylist.append(item)
+                    iRow = iRow + 1
+                i = 1
+                for col in collist:
+                    self.setCell(row, col, npdata.T[indexOfnp][i])
+                    i = i + 1
+                    
+
+        def __npyReplace(self, keylist, rulelist, npdata_list, titles=None):
+            rule_len = len(rulelist)
+            npyname = rulelist[0] + ".npy"
+            i = 0
+            while True:
+                if npyname in npdata_list:
+                    self.__oneNpyReplace(keylist, rulelist[1:], npyname, titles)
+                    i = i + 1
+                    npyname = rulelist[0] + str(i) + ".npy"
+                else:
+                    break
+            return
+
+        def modifyColData(self, modify_rule, newfilename=None):
+            keylist = modify_rule["key"].split(':')
+            swaplist = modify_rule['swap']
+            swapcells_list = modify_rule['swapCell']
+            set_list = modify_rule['set']
+            replist = modify_rule['replace']
+            #this is temp designed for keywords different in other data.npy
+            titles = modify_rule['titles']
+
+            newfilename = newfilename if newfilename else "new.xlsx"
+            newfile = self.xls.workpath + newfilename
+            newfile = newfile.replace('/', '\\')
+            npdata_list = []
+            eprint('[INFO] prepare to combine numpy data...check env...')
+            if self.__npyEnvCheck(replist, npdata_list):
+                eprint('[INFO] begin to combine...')
+                self.swapColumns(swaplist[0], swaplist[1])
+                self.swapCells(swapcells_list[0], swapcells_list[1])
+                self.setCells(set_list[0], set_list[1])
+                for item in replist:
+                    self.__npyReplace(keylist, item.split(':'), npdata_list, titles)
+                # xls.save("D:\\home\\ExcelChecker\\new.xlsx")
+                self.xls.save(newfile)
+                eprint("[INFO] save result to file: %s" % (newfile))
+            else:
+                eprint('[ERROR] env checking failed!')
+            return
 
 
 class EasyGUI():

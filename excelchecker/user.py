@@ -40,7 +40,7 @@ def index_sell_price_check(sht, row, dbi, params_list):
     else:
         return NORMAL
 
-def sale_table_check(xls, key, work_path):
+def sale_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -54,9 +54,13 @@ def sale_table_check(xls, key, work_path):
     }
 
     sht.dupCombColumn(sale_rule, db_key)
+
+    if 0 == sht.getStatistic(ERROR):
+        sht.dumpColumns('sale', ('E','B','D'))
+
     return sht
 
-def buy_table_check(xls, key, work_path):
+def buy_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet1')
     db_key = key
 
@@ -65,55 +69,23 @@ def buy_table_check(xls, key, work_path):
         "NoneKey" : "Mark", #ignore/mark/correct/delete
         "Add" : [],
         "Keep" : [],
-        "CheckItem" : ['K','I:K'],
+        "CheckItem" : ['K','I:N'],
         "CheckMethod" : [index_sell_price_check, index_sell_count_check],
     }
 
     sht.dupCombColumn(buy_rule, db_key)
 
-    xls.save("D:\\home\\ExcelChecker\\new.xlsx")
+    if 0 == sht.getStatistic(ERROR):
+        sht.dumpColumns('buy', ('F','I','K'))
+
     return sht
 
-
-NPDATA_FOLDER = 'npdata'
-def is_ready_for_generate_new_stockfile(work_path, npdata_list):
-    if os.path.exists(work_path + NPDATA_FOLDER):
-        for i in os.listdir(work_path + NPDATA_FOLDER):
-            npdata_list.append(i)
-    else:
-        return False
-
-    if 'buy.npy' in npdata_list and 'sale.npy' in npdata_list:
-        return True
-    else:
-        return False
-
-def combine_excel():
-    sht = xls.Sheet(xls, 'Sheet1')
-    sht.dumpColumns(NP_FILENAME('buy'), ('F','I','K'))
-    sht.dumpColumns(NP_FILENAME('sale'), ('E','B','D'))
-    # sht.swapColumn(('D','E'), ('J', 'K'))
-    exData = numpy.load(NP_FILENAME('buy'))
-
-def generate_new_stockfile(sht, work_path, title_line):
-    eprint('[INFO] 准备 生成新的库存表...检查环境...')
-    npdata_list = []
-    if 0 == sht.getStatistic(ERROR) and is_ready_for_generate_new_stockfile(work_path, npdata_list):
-        eprint('[INFO] 开始 生成新的库存表...')
-        new_stockfile = work_path + NP_FILENAME + '/' + "new_stock_file.xlsx"
-        sht.modifyData()
-        sht.xls.save(new_stockfile)
-        eprint("[INFO] 成功 生成新的库存表")
-        eprint("[INFO] 查看结果: %s" % (new_stockfile))
-    else:
-        eprint('[ERROR] 进项表和销售表仍有问题，请修改完之后重新检查！')
-
-def stock_table_check(xls, key, work_path):
+def stock_table_check(xls, key):
     sht = xls.Sheet(xls, 'Sheet2')
     db_key = key
 
     stock_rule = {
-        "TitleLine" : "A:关键字",
+        "TitleLine" : "A:关键字:合计", #keyColumn:begin:end
         "NoneKey" : "Fix:C", #Ignore/Mark/Fix/Delete
         "Add" : ['D','E','F','G','H'],
         "Keep" : ['B','C'], #Keep not None
@@ -123,14 +95,18 @@ def stock_table_check(xls, key, work_path):
 
     sht.dupCombColumn(stock_rule, db_key)
 
-    modify_rule = {
-        "key" : stock_rule["TitleLine"],
-        "swap" : [('D','E'), ('J', 'K')],
-        "set" : [],
-        "replace" : ["sale:B:C:D","buy:B:C:D"]
-    }
-
-    sht.modifyColData(modify_rule)
+    if 0 == sht.getStatistic(ERROR):
+        #generate new combined excel
+        modify_rule = {
+            "key" : stock_rule["TitleLine"],
+            "swap" : [('D','E'), ('J', 'K')],
+            "swapCell" : [('5-D','5-E'), ('5-J','5-K')],
+            "set" : [(), ()],
+            "replace" : ["sale:H:I", "buy:F:G"],
+            "titles" : ["开票索引", "零件号码"]
+        }
+        sht.setColumnsFormatText(('J', 'K'))
+        sht.modifyColData(modify_rule, "new_stock_file.xlsx")
 
     return sht
 
@@ -158,10 +134,9 @@ def userChecker(source_file, type_list, check_type):
         # eprint(source_file)
         eprint('[INFO] 开始 %s 检查...' % type_list[check_type])
         start = time.clock()
-        work_path = source_file[:source_file.rfind('/')+1]
         xls = EasyExcel(source_file)
         db_key = database_key_get(xls, type_list, check_type, source_file)
-        sht = excel_handler[type_list[check_type]](xls, db_key, work_path)
+        sht = excel_handler[type_list[check_type]](xls, db_key)
         xls.save()
         end = time.clock()
         eprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
