@@ -243,11 +243,16 @@ class EasyExcel:
             sht = self.xlSheet
             ncols = sht.UsedRange.Columns.Count
             return sht.Range(sht.Cells(row, 1), sht.Cells(row, ncols)).Value
-
         def getColumn(self, col):
             sht = self.xlSheet
             nrows = sht.UsedRange.Rows.Count
-            data_tuple = sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
+            return sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value
+        def setColumn(self, col, col_value):
+            sht = self.xlSheet
+            nrows = sht.UsedRange.Rows.Count
+            sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value = col_value
+        def getColumnToList(self, col):
+            data_tuple = self.getColumn(col)
             #this is paticaularly designed for the project, not sure if it will suitable for others
             data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
             return data_list
@@ -261,26 +266,22 @@ class EasyExcel:
             """
             sht = self.xlSheet
             col_num = len(col1_tuple)
+            nrows = sht.UsedRange.Rows.Count
             i = 0
             while i < col_num:
                 #.Copy() can only called once one time
-                #Make two column copy together will mix up value
-                # colCopy = sht.Columns(col1_tuple[i]).Value#Copy()
+                #will copy cell format, like formula
+                # colCopy = sht.Columns(col1_tuple[i]).Copy()
                 # sht.Columns(col2_tuple[i]).Insert(colCopy)
                 # sht.Columns(col1_tuple[i]).Delete()
-
-                # colCopy = sht.Columns(col2_tuple[i]).Value#Copy()
+                # colCopy = sht.Columns(col2_tuple[i]).Copy()
                 # sht.Columns(col1_tuple[i]).Insert(colCopy)
                 # sht.Columns(chr(ord(col2_tuple[i]) + 1)).Delete()
 
-                colCopy = self.getColumn(col1_tuple[i])
-                self.insertCol(col2_tuple[i], colCopy)
-                self.deleteCol(col1_tuple[i])
-
-                colCopy = self.getColumn(col2_tuple[i])
-                self.insertCol(col1_tuple[i], colCopy)
-                self.deleteCol(chr(ord(col2_tuple[i]) + 1))
-
+                col1_value = self.getColumn(col1_tuple[i])
+                col2_value = self.getColumn(col2_tuple[i])
+                self.setColumn(col1_tuple[i], col2_value)
+                self.setColumn(col2_tuple[i], col1_value)
                 i = i + 1
 
         def swapCells(self, cell1_tuple, cell2_tuple):
@@ -297,7 +298,6 @@ class EasyExcel:
                 row2 = int(cell2_tuple[i].split('-')[0])
                 col2 = cell2_tuple[i].split('-')[1]
                 cell1_value = self.getCell(row1, col1)
-                print(cell1_value)
                 self.setCell(row1, col1, self.getCell(row2, col2))
                 self.setCell(row2, col2, cell1_value)
                 i = i + 1
@@ -399,7 +399,7 @@ class EasyExcel:
             title_line = combRule["TitleLine"].split(':')
             NoneKey_list = combRule["NoneKey"].split(':')
             col = title_line[0]
-            data_list = sht.getColumn(col)
+            data_list = sht.getColumnToList(col)
 
             valid_list = []
             i = len(data_list)
@@ -457,7 +457,7 @@ class EasyExcel:
             npfile_abs = self.__get_npfilename(npfile_name)
             datalist = []
             for col in col_tuple:
-                datalist.append(self.getColumn(col))
+                datalist.append(self.getColumnToList(col))
             numpy.save(npfile_abs, datalist)
 
         def __npyEnvCheck(self, replist, npdata_list):
@@ -478,7 +478,7 @@ class EasyExcel:
             npfile_abs = self.xls.workpath + NUMPY_FOLDER + '/' + npyname
             keycol = keylist[0]
 
-            xls_keylist = self.getColumn(keycol)
+            xls_keylist = self.getColumnToList(keycol)
             if len(keylist) == 3:
                 xls_keylist.pop()
             iRow = len(xls_keylist) + 1 #insert above the row

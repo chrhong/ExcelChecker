@@ -105,7 +105,8 @@ def stock_table_check(xls, key):
             "replace" : ["sale:H:I", "buy:F:G"],
             "titles" : ["开票索引", "零件号码"]
         }
-        sht.setColumnsFormatText(('J', 'K'))
+        # sht.setColumnsFormatText(('J', 'K'))
+        #988 buy data wrong
         sht.modifyColData(modify_rule, "new_stock_file.xlsx")
 
     return sht
