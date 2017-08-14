@@ -56,7 +56,7 @@ def sale_table_check(xls, key):
     sht.dupCombColumn(sale_rule, db_key)
 
     if 0 == sht.getStatistic(ERROR):
-        sht.dumpColumns('sale', ('E','B','D'))
+        sht.dumpColumns('sale', ('E','B','D'), (VALUE_TYPE_TEXT, VALUE_TYPE_NUM, VALUE_TYPE_NUM))
 
     return sht
 
@@ -69,14 +69,14 @@ def buy_table_check(xls, key):
         "NoneKey" : "Mark", #ignore/mark/correct/delete
         "Add" : [],
         "Keep" : [],
-        "CheckItem" : ['K','I:N'],
+        "CheckItem" : ['K','I:K'],
         "CheckMethod" : [index_sell_price_check, index_sell_count_check],
     }
 
     sht.dupCombColumn(buy_rule, db_key)
 
     if 0 == sht.getStatistic(ERROR):
-        sht.dumpColumns('buy', ('F','I','K'))
+        sht.dumpColumns('buy', ('F','I','N'), (VALUE_TYPE_TEXT, VALUE_TYPE_NUM, VALUE_TYPE_NUM))
 
     return sht
 

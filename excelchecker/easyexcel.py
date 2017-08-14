@@ -114,6 +114,8 @@ UNKNOW = GREY = 15
 RESIZEBLE = EDITABLE = True
 UNRESIZEBLE = UNEDITABLE = False
 NUMPY_FOLDER = 'npdata'
+VALUE_TYPE_TEXT = 'TEXT'
+VALUE_TYPE_NUM = 'NUM'
 
 class EasyExcel:
     """
@@ -251,10 +253,14 @@ class EasyExcel:
             sht = self.xlSheet
             nrows = sht.UsedRange.Rows.Count
             sht.Range(sht.Cells(1, col), sht.Cells(nrows, col)).Value = col_value
-        def getColumnToList(self, col):
+        def getColumnToList(self, col, valuetype=VALUE_TYPE_TEXT):
             data_tuple = self.getColumn(col)
             #this is paticaularly designed for the project, not sure if it will suitable for others
-            data_list = str(data_tuple).replace('.0','').replace('u\'','').replace('\'','').strip('(),').split(',), (')
+            if valuetype == VALUE_TYPE_TEXT:
+                data_str = str(data_tuple).replace('.0','')
+            else: #VALUE_TYPE_NUM:
+                data_str = str(data_tuple)
+            data_list = data_str.replace('u\'','').replace('\'','').strip('(),').split(',), (')
             return data_list
         def swapColumns(self, col1_tuple, col2_tuple):
             """
@@ -453,11 +459,12 @@ class EasyExcel:
                 else:
                     return work_path + NUMPY_FOLDER + '/' + temp_file
 
-        def dumpColumns(self, npfile_name, col_tuple):
+        def dumpColumns(self, npfile_name, col_tuple, type_tuple):
             npfile_abs = self.__get_npfilename(npfile_name)
             datalist = []
             for col in col_tuple:
-                datalist.append(self.getColumnToList(col))
+                i = col_tuple.index(col)
+                datalist.append(self.getColumnToList(col, type_tuple[i]))
             numpy.save(npfile_abs, datalist)
 
         def __npyEnvCheck(self, replist, npdata_list):
