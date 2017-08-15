@@ -413,7 +413,8 @@ class EasyExcel:
                 #List  index range, [0,len()-1]
                 #Excel index range, [1,len()]
                 i = i - 1
-                if title_line[1] == data_list[i]:#python 2.x .decode('unicode-escape')
+                data_str = data_list[i] if not IS_PYTHON2 else data_list[i].decode('unicode-escape')
+                if title_line[1] == data_str:
                     eprint("Meet title line to end check")
                     break
 
@@ -493,14 +494,15 @@ class EasyExcel:
             npdata = numpy.load(npfile_abs)
             npdatakey = list(npdata[0])
             for item in npdatakey:
-                if titles and item in titles:
+                item_str = item if not IS_PYTHON2 else item.decode('unicode-escape')
+                if titles and item_str in titles:
                     continue #ignore titles
                 indexOfnp = npdatakey.index(item)
                 if item in xls_keylist:
                     row = xls_keylist.index(item) + 1
                 else:
                     self.insertRow(iRow) #insert above the row
-                    self.setCell(iRow, keycol, item)
+                    self.setCell(iRow, keycol, item_str)
                     row = iRow
                     xls_keylist.append(item)
                     iRow = iRow + 1
@@ -508,7 +510,6 @@ class EasyExcel:
                 for col in collist:
                     self.setCell(row, col, npdata.T[indexOfnp][i])
                     i = i + 1
-                    
 
         def __npyReplace(self, keylist, rulelist, npdata_list, titles=None):
             rule_len = len(rulelist)

@@ -106,10 +106,16 @@ def stock_table_check(xls, key):
             "titles" : ["开票索引", "零件号码"]
         }
         # sht.setColumnsFormatText(('J', 'K'))
-        #988 buy data wrong
         sht.modifyColData(modify_rule, "new_stock_file.xlsx")
 
     return sht
+
+def test(xls, key):
+    npfile_abs = "D:\\home\\X\\TestDoc\\npdata\\buy.npy"
+    npdata = numpy.load(npfile_abs)
+    npdatakey = list(npdata[0])
+    for i in npdatakey:
+        print(i.decode('unicode-escape'))
 
 excel_handler = {
     '库存表' : stock_table_check,
@@ -147,7 +153,7 @@ def userChecker(source_file, type_list, check_type):
         RaiseException()
 
 def gui_mainloop():
-    root = EasyGUI("ExcelChecker v0.2", '500x205', UNRESIZEBLE)
+    root = EasyGUI("ExcelChecker v1.0", '500x205', UNRESIZEBLE)
     root.Entry("Source file", 48, (10,20))
     root.LogWindow(("white","black"), (48,5), (10,100), UNEDITABLE)
     root.Radiobutton("进项表", 1, (10,60))
