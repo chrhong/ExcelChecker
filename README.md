@@ -11,10 +11,7 @@
         |
         |---test/               //test codes/files
         |
-        |
-        |easyexcel.py           //EasyExcel class
-        |
-        |gui.py
+        |easyexcel.py           //EasyExcel, EasyGUI, EasyLog class
         |
         |user.py                //Particurlar function to check detailed file
         |
