@@ -35,7 +35,7 @@ class Registry:
         elif __file__:
             root_path = os.path.dirname(__file__)
 
-        config_path = root_path + "/" + "installed"
+        config_path = root_path + "\\" + "installed"
 
         try:
             with open(config_path, 'r') as f:

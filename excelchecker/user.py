@@ -168,41 +168,39 @@ def oneClick_mainloop():
 
     try:
         if len(sys.argv) < 2:
-            print("[Error] argv error! Use demo file in debug mode!")
+            eprint("[Error] argv error! Use demo file in debug mode!")
             #debug file
-            source_file = u"D:/userdata/chrhong/Desktop/Python/X/去库存索引表.1.xlsx"
+            source_file = "test/部分进项表.xlsx"
         else:
-            source_file = ' '.join(sys.argv[1:]).strip("\'\"")
-            source_file = source_file.decode('gbk').replace('\\', '/').replace('\"', '')
+            if IS_PYTHON2:
+                source_file = ' '.join(sys.argv[1:]).strip("\'\"").decode('gbk')
+            else:
+                source_file = ' '.join(sys.argv[1:]).strip("\'\"")
+            source_file = source_file.replace('\\', '/').replace('\"', '')
 
-        print(source_file)
+        eprint(source_file)
 
-        if u'进项' in source_file:
-            file_type = 'buy'
-        elif u'索引' in source_file:
-            file_type = 'index'
-        elif u'库存' in source_file:
-            file_type = 'stock'
-        else:
-            print("[ERROR] %s not supported !" % source_file)
-            print(u"[INFO] Valid file: '进项', '索引', '库存' !")
+        type_list = ['进项表', '销售表', '库存表']
+        check_type = len(type_list)
+
+        for typei in type_list:
+            if typei in source_file:
+                check_type = type_list.index(typei)
+
+        if check_type == len(type_list):
+            eprint("[ERROR] %s not supported !" % source_file)
+            eprint("[INFO] Valid file: %s !" % type_list.join(', '))
             RaiseException(HANG)
 
-        cost_db = []
-        cost_key = []
-        if not file_type == 'stock':
-            #product.db read, stock do not need db
-            cost_db = xls.dbInit(source_file[:source_file.rfind('/')+1] + 'product.db')
-            for li in cost_db:
-                cost_key.append(li[0])
-
-        print('[INFO] start %s_file checking...' % file_type)
+        eprint('[INFO] 开始 %s 检查...' % type_list[check_type])
         start = time.clock()
-        xls = easyExcel(source_file)
-        excel_handler[file_type](xls,cost_db,cost_key)
+        xls = EasyExcel(source_file)
+        db_key = database_key_get(xls, type_list, check_type, source_file)
+        sht = excel_handler[type_list[check_type]](xls, db_key)
         xls.save()
-        xls.close()
         end = time.clock()
-        print("[INFO] %s_table_check: %f s" % (file_type, end - start))
+        eprint("[INFO] %s 检查完成, 耗时: %f 秒" % (type_list[check_type], end - start))
+        eprint("[INFO] 错误: %d 个, 无法匹配: %d 个" % (sht.getStatistic(ERROR), sht.getStatistic(UNKNOW)))
+        xls.close()
     except:
         RaiseException(HANG)
