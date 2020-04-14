@@ -1,4 +1,4 @@
-## This is a easy Excel utility based on Python 2.x
+## This is a easy Excel utility
 
 ### File structure explaination
 <pre><code>
